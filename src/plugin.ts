@@ -93,7 +93,7 @@ function WechatyWeixinOpenAI (config: WechatyWeixinOpenAIConfig): WechatyPlugin 
   }
 
   const isConfigMessage = async (message: Message): Promise<boolean> => {
-    const from = message.from()
+    const talker = message.talker()
     const room = message.room()
 
     if (await matchSkipMessage(message))                  { return false }
@@ -109,7 +109,7 @@ function WechatyWeixinOpenAI (config: WechatyWeixinOpenAIConfig): WechatyPlugin 
       const mentionSelf = await message.mentionSelf()
       if (mentionList.length > 0 && !mentionSelf)         { return false }
     } else {
-      if (from && !await matchContact(from))              { return false }
+      if (talker && !await matchContact(talker))              { return false }
     }
 
     const text = await message.mentionText()
@@ -140,10 +140,10 @@ function WechatyWeixinOpenAI (config: WechatyWeixinOpenAIConfig): WechatyPlugin 
       const text = await message.mentionText()
       if (!text) { return }
 
-      const from = message.from()
+      const talker = message.talker()
       const room = message.room()
 
-      const answer = await WeixinOpenAI.Instance.aiBot(text, from.id)
+      const answer = await WeixinOpenAI.Instance.aiBot(text, talker.id)
 
       /**
        * PreAnswerHook logic, if the hook return false, will skip further process of the message
@@ -151,7 +151,7 @@ function WechatyWeixinOpenAI (config: WechatyWeixinOpenAIConfig): WechatyPlugin 
       if (typeof config.preAnswerHook === 'function') {
         let sentimentData: SentimentData | undefined
         if (config.includeSentiment) {
-          sentimentData = await WeixinOpenAI.Instance.sentiment(text, from.id)
+          sentimentData = await WeixinOpenAI.Instance.sentiment(text, talker.id)
         }
         const shouldProceed = await config.preAnswerHook(message, answer, sentimentData)
         if (typeof shouldProceed === 'boolean' && !shouldProceed) {
@@ -168,8 +168,8 @@ function WechatyWeixinOpenAI (config: WechatyWeixinOpenAIConfig): WechatyPlugin 
 
       const reply = correctMessage.content.replace(/LINE_BREAK/g, '\n')
 
-      if (from && room && await message.mentionSelf()) {
-        await room.say(reply, from)
+      if (talker && room && await message.mentionSelf()) {
+        await room.say(reply, talker)
       } else {
         await message.say(reply)
       }
